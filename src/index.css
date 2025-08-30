@@ -1,0 +1,15 @@
+@import url('@fontsource/inter/400.css');
+@import url('@fontsource/inter/500.css');
+@import url('@fontsource/inter/600.css');
+@import url('@fontsource/inter/700.css');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: #f8fafc;
+}
