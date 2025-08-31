@@ -13,3 +13,13 @@
 body {
   background-color: #f8fafc;
 }
+@media (max-width: 1024px) {
+  body {
+    padding-bottom: 4rem;
+  }
+}
+
+/* Prevent scroll when more menu is open */
+body.menu-open {
+  overflow: hidden;
+}
