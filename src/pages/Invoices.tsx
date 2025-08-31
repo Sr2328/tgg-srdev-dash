@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Eye, Download, Mail, FileText, Calendar, DollarSign, Edit, Trash2, IndianRupee } from 'lucide-react';
+import { Plus, Search, Eye, Download, Mail, FileText, Calendar, DollarSign, Edit, Trash2, IndianRupee, MoreVertical, X } from 'lucide-react';
 import GlassCard from '../components/ui/GlassCard';
 import Header from '../components/layout/Header';
 import AddInvoiceModal from '../components/modals/AddInvoiceModal';
@@ -7,7 +7,6 @@ import EditInvoiceModal from '../components/modals/EditInvoiceModal';
 import { supabase } from '../lib/supabase';
 import type { Invoice } from '../types/database';
 import jsPDF from "jspdf";
-
 
 interface InvoiceWithCompany extends Invoice {
   company_name?: string;
@@ -21,115 +20,13 @@ export default function Invoices() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
-
-
-
-const handleDownload= (invoice: InvoiceWithCompany) => {
-  const doc = new jsPDF();
-
-  // Title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("YADAV GARDENING SERVICES", 105, 20, { align: "center" });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.text("Sec-6, IMT Manesar", 105, 28, { align: "center" });
-
-  doc.setFont("helvetica", "bold");
-  doc.text("INVOICE", 105, 38, { align: "center" });
-
-  // Customer details
-  doc.setFontSize(11);
-  doc.text("Date: ___________________", 15, 50);
-  doc.text("No: ___________________", 140, 50);
-  doc.text("Name: ___________________________________________", 15, 60);
-  doc.text("Address: ________________________________________", 15, 70);
-
-  // Table Header
-  doc.setFont("helvetica", "bold");
-  doc.text("Sl. No.", 15, 85);
-  doc.text("Items", 40, 85);
-  doc.text("Qnty.", 120, 85);
-  doc.text("Rate", 140, 85);
-  doc.text("Amount", 170, 85);
-
-  doc.line(15, 88, 200, 88); // header underline
-
-  // Table Rows Example
-  let y = 100;
-  const items = [
-    { sl: 1, name: "Garden Soil (per bag)", qty: 5, rate: 200, amount: 1000 },
-    { sl: 2, name: "Fertilizer Pack", qty: 2, rate: 350, amount: 700 },
-    { sl: 3, name: "Plant Pots", qty: 10, rate: 50, amount: 500 },
-  ];
-
-  doc.setFont("helvetica", "normal");
-  items.forEach((item) => {
-    doc.text(String(item.sl), 17, y);
-    doc.text(item.name, 40, y);
-    doc.text(String(item.qty), 125, y);
-    doc.text(String(item.rate), 145, y);
-    doc.text(String(item.amount), 175, y);
-    y += 10;
-  });
-
-  // Total
-  doc.setFont("helvetica", "bold");
-  doc.text("TOTAL:", 140, y + 10);
-  const total = items.reduce((sum, item) => sum + item.amount, 0);
-  doc.text(String(total), 175, y + 10);
-
-  // Signature
-  doc.setFont("helvetica", "normal");
-  doc.text("Signature", 170, y + 40);
-
-  // Save PDF
-  doc.save("invoice.pdf");
-};
-
-
-  useEffect(() => {
-    loadInvoices();
-    
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('invoices_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
-        loadInvoices();
-      })
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    filterInvoices();
-  }, [invoices, searchTerm]);
-
-  const filterInvoices = () => {
-    if (!searchTerm) {
-      setFilteredInvoices(invoices);
-      return;
-    }
-
-    const filtered = invoices.filter(invoice =>
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredInvoices(filtered);
-  };
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const loadInvoices = async () => {
     try {
       const { data, error } = await supabase
         .from('invoices')
-        .select(`
-          *,
-          companies!inner(name)
-        `)
+        .select(`*, companies!inner(name)`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -145,6 +42,102 @@ const handleDownload= (invoice: InvoiceWithCompany) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    loadInvoices();
+    const subscription = supabase
+      .channel('invoices_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
+        loadInvoices();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredInvoices(invoices);
+      return;
+    }
+
+    const filtered = invoices.filter(invoice =>
+      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredInvoices(filtered);
+  }, [invoices, searchTerm]);
+
+  const handleDownload = (invoice: InvoiceWithCompany) => {
+    const doc = new jsPDF();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("YADAV GARDENING SERVICES", 105, 30, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.text("Sec-6, IMT Manesar", 105, 40, { align: "center" });
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("TAX INVOICE", 105, 55, { align: "center" });
+
+    doc.setFontSize(11);
+    doc.text(`Date: ${new Date(invoice.created_at).toLocaleDateString()}`, 15, 70);
+    doc.text(`Invoice No: ${invoice.invoice_number}`, 140, 70);
+    doc.text(`Company: ${invoice.company_name}`, 15, 80);
+
+    doc.rect(15, 90, 180, 15);
+    doc.setFont("helvetica", "bold");
+    doc.text("Description", 20, 100);
+    doc.text("Qty", 100, 100);
+    doc.text("Rate", 130, 100);
+    doc.text("Amount", 170, 100);
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Services Rendered", 20, 120);
+    doc.text("1", 100, 120);
+    doc.text(`₹${Number(invoice.amount).toLocaleString('en-IN')}`, 130, 120);
+    doc.text(`₹${Number(invoice.amount).toLocaleString('en-IN')}`, 170, 120);
+
+    doc.line(15, 130, 195, 130);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Amount:", 130, 140);
+    doc.text(`₹${Number(invoice.amount).toLocaleString('en-IN')}`, 170, 140);
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Amount in words:", 15, 160);
+    doc.setFont("helvetica", "italic");
+    doc.text(`${numberToWords(Number(invoice.amount))} Rupees Only`, 15, 170);
+
+    doc.setFont("helvetica", "normal");
+    doc.text("For YADAV GARDENING SERVICES", 140, 200);
+    doc.text("Authorized Signatory", 140, 220);
+
+    doc.save(`Invoice-${invoice.invoice_number}.pdf`);
+  };
+
+  const numberToWords = (num: number): string => {
+    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+    const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+    const convert = (n: number): string => {
+      if (n < 10) return ones[n];
+      if (n < 20) return teens[n - 10];
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
+      if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " and " + convert(n % 100) : "");
+      if (n < 100000) return convert(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + convert(n % 1000) : "");
+      if (n < 10000000) return convert(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + convert(n % 100000) : "");
+      return convert(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + convert(n % 10000000) : "");
+    };
+
+    return convert(num);
   };
 
   const deleteInvoice = async (id: string) => {
@@ -189,14 +182,14 @@ const handleDownload= (invoice: InvoiceWithCompany) => {
       </div>
     );
   }
-return (
-    <div className="space-y-6 px-4 pb-20 max-w-[100vw] overflow-x-hidden"> {/* Added padding and overflow control */}
+
+  return (
+    <div className="space-y-4 sm:space-y-6 px-4 pb-20 max-w-[100vw] overflow-x-hidden">
       <Header 
         onSearch={setSearchTerm} 
-        searchPlaceholder="Search invoices..."  // Shortened for mobile
+        searchPlaceholder="Search invoices..." 
       />
 
-      {/* Header - Modified for better mobile layout */}
       <div className="flex flex-col gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Invoices</h1>
@@ -211,21 +204,53 @@ return (
         </button>
       </div>
 
-      {/* Invoice Stats - Modified grid for better mobile layout */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-        <GlassCard className="p-3 sm:p-6"> {/* Added responsive padding */}
+        <GlassCard className="p-3 sm:p-6">
           <div className="text-center">
             <p className="text-xs sm:text-sm text-gray-600">Total Invoices</p>
             <p className="text-xl sm:text-3xl font-bold text-gray-900">{invoices.length}</p>
           </div>
         </GlassCard>
-        {/* Apply same changes to other GlassCards */}
+        
+        <GlassCard className="p-3 sm:p-6">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm text-gray-600">Total Value</p>
+            <div className="flex items-center justify-center">
+              <p className="text-xl sm:text-3xl font-bold text-blue-600">
+                {new Intl.NumberFormat("en-IN", {
+                  style: "currency",
+                  currency: "INR",
+                  maximumFractionDigits: 0,
+                }).format(totalInvoiceValue)}
+              </p>
+            </div>
+          </div>
+        </GlassCard>
+        
+        <GlassCard className="p-3 sm:p-6">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm text-gray-600">Paid</p>
+            <div className="flex items-center justify-center gap-1">
+              <p className="text-xl sm:text-3xl font-bold text-green-600">{paidInvoices.length}</p>
+              <span className="text-xs text-green-600">invoices</span>
+            </div>
+          </div>
+        </GlassCard>
+        
+        <GlassCard className="p-3 sm:p-6">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm text-gray-600">Overdue</p>
+            <div className="flex items-center justify-center gap-1">
+              <p className="text-xl sm:text-3xl font-bold text-red-600">{overdueInvoices.length}</p>
+              <span className="text-xs text-red-600">invoices</span>
+            </div>
+          </div>
+        </GlassCard>
       </div>
 
-      {/* Invoices Table - Modified for mobile scroll */}
-      <GlassCard className="p-0 sm:p-6"> {/* Removed default padding */}
-        <div className="overflow-x-auto w-full">
-          <table className="w-full min-w-[800px]"> {/* Added min-width */}
+      <GlassCard className="p-0 sm:p-6">
+        <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left text-xs sm:text-sm text-gray-600 font-medium p-3 whitespace-nowrap">Invoice #</th>
@@ -269,7 +294,27 @@ return (
                       <button className="p-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors">
                         <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
-                      {/* Apply same changes to other action buttons */}
+                      <button 
+                        onClick={() => handleEdit(invoice)}
+                        className="p-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                      >
+                        <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDownload(invoice)}
+                        className="p-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors"
+                      >
+                        <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                      <button className="p-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors">
+                        <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                      <button 
+                        onClick={() => deleteInvoice(invoice.id)}
+                        className="p-1 rounded bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -279,7 +324,6 @@ return (
         </div>
       </GlassCard>
 
-      {/* Empty State - Modified for better mobile layout */}
       {filteredInvoices.length === 0 && (
         <div className="text-center py-8 sm:py-12">
           <FileText className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
@@ -296,11 +340,6 @@ return (
         </div>
       )}
 
-  
-  
-   
-
-      {/* Modals */}
       <AddInvoiceModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
