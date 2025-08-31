@@ -170,7 +170,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <Header onSearch={handleGlobalSearch} />
+     
 
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">

@@ -174,10 +174,7 @@ const [paymentCompany, setPaymentCompany] = useState<Company | null>(null);
 
   return (
     <div className="space-y-6">
-      <Header
-        onSearch={setSearchTerm}
-        searchPlaceholder="Search companies by name, contact, email, or location..."
-      />
+    
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

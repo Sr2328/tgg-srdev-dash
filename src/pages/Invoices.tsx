@@ -185,10 +185,7 @@ export default function Invoices() {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-4 pb-20 max-w-[100vw] overflow-x-hidden">
-      <Header 
-        onSearch={setSearchTerm} 
-        searchPlaceholder="Search invoices..." 
-      />
+   
 
       <div className="flex flex-col gap-4">
         <div className="space-y-1">
