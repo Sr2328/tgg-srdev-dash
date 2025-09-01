@@ -19,6 +19,10 @@ const formatINR = (value: number) => {
   }).format(value);
 };
 
+
+
+
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
@@ -179,40 +183,49 @@ export default function Dashboard() {
       </div>
 
       {/* Primary Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          title="Total Income"
-          value={formatINR(stats.totalIncome)}
-          icon={IndianRupee}
-          change={{ value: '+12.5%', trend: 'up' }}
-          color="green"
-          onClick={() => navigate('/reports')}
-        />
-        <StatsCard
-          title="Active Companies"
-          value={stats.permanentClients}
-          icon={Building2}
-          change={{ value: '+3', trend: 'up' }}
-          color="blue"
-          onClick={() => navigate('/companies')}
-        />
-        <StatsCard
-          title="Active Workers"
-          value={stats.activeWorkers}
-          icon={Users}
-          change={{ value: '+2', trend: 'up' }}
-          color="purple"
-          onClick={() => navigate('/labor')}
-        />
-        <StatsCard
-          title="Active Projects"
-          value={stats.activeProjects}
-          icon={FolderOpen}
-          change={{ value: '+5', trend: 'up' }}
-          color="orange"
-          onClick={() => navigate('/projects')}
-        />
-      </div>
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+  <StatsCard
+    title="Total Income"
+    value={formatINR(stats.totalIncome)}
+    icon={IndianRupee}
+    change={{ value: '+12.5%', trend: 'up' }}
+    color="green"
+    onClick={() => navigate('/reports')}
+  />
+  <StatsCard
+    title="Total Expenses"
+    value={formatINR(stats.totalExpenses)}
+    icon={IndianRupee}
+    change={{ value: '-8.5%', trend: 'down' }} // optional
+    color="red"
+    onClick={() => navigate('/reports')}
+  />
+  <StatsCard
+    title="Active Companies"
+    value={stats.permanentClients}
+    icon={Building2}
+    change={{ value: '+3', trend: 'up' }}
+    color="blue"
+    onClick={() => navigate('/companies')}
+  />
+  <StatsCard
+    title="Active Workers"
+    value={stats.activeWorkers}
+    icon={Users}
+    change={{ value: '+2', trend: 'up' }}
+    color="purple"
+    onClick={() => navigate('/labor')}
+  />
+  <StatsCard
+    title="Active Projects"
+    value={stats.activeProjects}
+    icon={FolderOpen}
+    change={{ value: '+5', trend: 'up' }}
+    color="orange"
+    onClick={() => navigate('/projects')}
+  />
+</div>
+
 
       {/* Secondary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

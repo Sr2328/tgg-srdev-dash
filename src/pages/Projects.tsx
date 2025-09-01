@@ -1,56 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, MapPin, Calendar, TrendingUp, TrendingDown, FolderOpen, IndianRupee } from 'lucide-react';
-import GlassCard from '../components/ui/GlassCard';
-import Header from '../components/layout/Header';
-import AddProjectModal from '../components/modals/AddProjectModal';
-import EditProjectModal from '../components/modals/EditProjectModal';
-import AddExpenseModal from '../components/modals/AddExpenseModal'; // <-- Added import
-import { supabase } from '../lib/supabase';
-import type { SideProject, ProjectExpense } from '../types/database';
+import React, { useState, useEffect } from "react";
+import {
+  Plus, Search, Edit, Trash2, Eye, MapPin, Calendar,
+  TrendingUp, TrendingDown, FolderOpen
+} from "lucide-react";
+import GlassCard from "../components/ui/GlassCard";
+import Header from "../components/layout/Header";
+import AddProjectModal from "../components/modals/AddProjectModal";
+import EditProjectModal from "../components/modals/EditProjectModal";
+import AddExpenseModal from "../components/modals/AddExpenseModal";
+import { supabase } from "../lib/supabase";
+import type { SideProject, ProjectExpense } from "../types/database";
 
 export default function Projects() {
   const [projects, setProjects] = useState<SideProject[]>([]);
   const [expenses, setExpenses] = useState<ProjectExpense[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<SideProject[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<SideProject | null>(null);
+
+  // ✅ Fix: only store projectId (string) here
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+
   const [loading, setLoading] = useState(true);
 
-  // ---- Added states for Add Expense modal ----
-  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
-  const [selectedProjectForExpense, setSelectedProjectForExpense] = useState<SideProject | null>(null);
+  // ✅ handleAddExpense uses selectedProjectId
+  const handleAddExpense = async (expense: {
+    description: string;
+    amount: number;
+    date: string;
+  }) => {
+    try {
+      if (!selectedProjectId) throw new Error("No project selected");
 
-  const handleAddExpenseClick = (project: SideProject) => {
-    setSelectedProjectForExpense(project);
-    setShowAddExpenseModal(true);
+      const { data, error } = await supabase
+        .from("project_expenses")
+        .insert([
+          {
+            project_id: selectedProjectId,
+            description: expense.description,
+            amount: expense.amount,
+            date: expense.date,
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setExpenses((prev) => [...prev, ...data]);
+      }
+    } catch (err) {
+      console.error("Error adding expense:", err);
+      alert("Failed to add expense: " + (err as any).message);
+    }
   };
 
+  // -------------------- DATA LOADING --------------------
   useEffect(() => {
     loadProjects();
     loadExpenses();
-    
-    // Set up real-time subscriptions
+
     const subscriptions = [
       supabase
-        .channel('projects_realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'side_projects' }, () => {
+        .channel("projects_realtime")
+        .on("postgres_changes", { event: "*", schema: "public", table: "side_projects" }, () => {
           loadProjects();
         })
         .subscribe(),
-      
+
       supabase
-        .channel('project_expenses_realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'project_expenses' }, () => {
+        .channel("project_expenses_realtime")
+        .on("postgres_changes", { event: "*", schema: "public", table: "project_expenses" }, () => {
           loadExpenses();
         })
         .subscribe(),
     ];
 
-    return () => {
-      subscriptions.forEach(sub => sub.unsubscribe());
-    };
+    return () => subscriptions.forEach((sub) => sub.unsubscribe());
   }, []);
 
   useEffect(() => {
@@ -63,82 +91,80 @@ export default function Projects() {
       return;
     }
 
-    const filtered = projects.filter(project =>
-      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.location.toLowerCase().includes(searchTerm.toLowerCase())
+    setFilteredProjects(
+      projects.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.location.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
-    setFilteredProjects(filtered);
   };
 
   const loadProjects = async () => {
     try {
       const { data, error } = await supabase
-        .from('side_projects')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("side_projects")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setProjects(data || []);
     } catch (error) {
-      console.error('Error loading projects:', error);
+      console.error("Error loading projects:", error);
     }
   };
 
   const loadExpenses = async () => {
     try {
       const { data, error } = await supabase
-        .from('project_expenses')
-        .select('*')
-        .order('date', { ascending: false });
+        .from("project_expenses")
+        .select("*")
+        .order("date", { ascending: false });
 
       if (error) throw error;
       setExpenses(data || []);
     } catch (error) {
-      console.error('Error loading expenses:', error);
+      console.error("Error loading expenses:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const deleteProject = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+    if (!confirm("Are you sure you want to delete this project?")) return;
 
     try {
-      const { error } = await supabase
-        .from('side_projects')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from("side_projects").delete().eq("id", id);
       if (error) throw error;
     } catch (error) {
-      console.error('Error deleting project:', error);
+      console.error("Error deleting project:", error);
     }
   };
 
-  const getProjectExpenses = (projectId: string) => {
-    return expenses.filter(e => e.project_id === projectId);
-  };
+  const getProjectExpenses = (projectId: string) =>
+    expenses.filter((e) => e.project_id === projectId);
 
-  const getTotalProjectExpenses = (projectId: string) => {
-    return getProjectExpenses(projectId).reduce((sum, e) => sum + Number(e.amount), 0);
-  };
+  const getTotalProjectExpenses = (projectId: string) =>
+    getProjectExpenses(projectId).reduce((sum, e) => sum + Number(e.amount), 0);
 
-  const getNetProfit = (project: SideProject) => {
-    const totalExpenses = getTotalProjectExpenses(project.id);
-    return Number(project.profit) - totalExpenses;
-  };
+  const getNetProfit = (project: SideProject) =>
+    Number(project.profit) - getTotalProjectExpenses(project.id);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'text-green-600 bg-green-50 border-green-200';
-      case 'completed': return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'cancelled': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+      case "active":
+        return "text-green-600 bg-green-50 border-green-200";
+      case "completed":
+        return "text-blue-600 bg-blue-50 border-blue-200";
+      case "cancelled":
+        return "text-red-600 bg-red-50 border-red-200";
+      default:
+        return "text-gray-600 bg-gray-50 border-gray-200";
     }
   };
 
   const handleEdit = (project: SideProject) => {
-    setSelectedProject(project);
+    setSelectedProjectId(project.id); // only store ID
     setShowEditModal(true);
   };
 
@@ -251,7 +277,7 @@ export default function Projects() {
                     </button>
                   </div>
                 </div>
-
+</div>
                 {/* Project Info */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-gray-600 text-sm">
@@ -324,11 +350,17 @@ export default function Projects() {
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={() => handleAddExpenseClick(project)}
-                    className="flex-1 border-2 border-blue-200 text-blue-600 hover:bg-blue-50 py-2 px-3 rounded-lg text-sm transition-colors"
-                  >
-                    Add Expense
+  
+
+<div className="flex gap-2 pt-2">
+ <button
+                  onClick={() => {
+                    setSelectedProjectId(project.id); // ✅ store ID
+                    setShowExpenseModal(true); // ✅ open modal
+                  }}
+                  className="flex-1 border-2 border-blue-200 text-blue-600 hover:bg-blue-50 py-2 px-3 rounded-lg text-sm transition-colors"
+                >
+                  Add Expense
                   </button>
                   <button className="flex-1 bg-gray-900 hover:bg-gray-800 text-white py-2 px-3 rounded-lg text-sm transition-colors">
                     View Details
@@ -364,12 +396,21 @@ export default function Projects() {
         onClose={() => setShowAddModal(false)}
         onSuccess={loadProjects}
       />
-      <EditProjectModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        onSuccess={loadProjects}
-        project={selectedProject}
+    <EditProjectModal
+  isOpen={showEditModal}
+  onClose={() => setShowEditModal(false)}
+  onSuccess={loadProjects}
+  project={projects.find((p) => p.id === selectedProjectId) || null} // ✅ full project
+/>
+  <AddExpenseModal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        onExpenseAdded={loadExpenses} // ✅ correct prop name
+        projectId={selectedProjectId || ""}
       />
+
+
+
     </div>
   );
 }
